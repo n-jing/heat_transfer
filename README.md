@@ -5,4 +5,4 @@
 3. use least norm sulotion to control the explicit euler iteration to make souce temperature keep constant
 
 ## Result
-![init status](./pic/0.png =30) ![10th iteration](./pic/10.png =30) ![100th iteration](./pic/100.png =30) ![1000th iteration](./pic/1000.png =30)
+![init status](./pic/0.png) ![10th iteration](./pic/10.png) ![100th iteration](./pic/100.png) ![1000th iteration](./pic/1000.png)
