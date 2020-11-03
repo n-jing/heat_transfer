@@ -59,7 +59,7 @@ int main (int argc, char *argv[])
   uniform_real_distribution<double> source_temperature_ger(90, 100);
   uniform_real_distribution<double> temperature_ger(0, 10);
 
-  asset(vert_num > 10);
+  // assert(vert_num > 10);
   set<int> source;
   const int source_num = 10;
   vector<Triplet<double>> J_ele; // constrian matrix
