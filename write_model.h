@@ -45,6 +45,81 @@ namespace Jing
     return true;
   }
 
+  //! \brief write obj to path
+  //! \param [in] path
+  //! \return is_write_success
+  template<typename T, typename U=int>
+  bool WriteObj(const Eigen::Matrix<T, -1, -1> &verts, const Eigen::Matrix<T, -1, -1> &verts_norm,
+                const Eigen::Matrix<U, -1, -1> &cells, const char* path = "demo.obj")
+  {
+    FILE *f_out = fopen(path, "w");
+    if (!f_out)
+    {
+      printf("[  \033[1;31merror\033[0m  ] error in file open\n");
+      return false;
+    }
+
+    fputs("# write model by program\n", f_out);
+    const int VR = verts.rows();
+    const int VNR = verts_norm.rows();
+    for (int r = 0; r < VR; ++r)
+    {
+      fprintf(f_out, "v %lf %lf %lf\n", verts(r, 0), verts(r, 1), verts(r, 2));
+    }
+    for (int r = 0; r < VNR; ++r)
+    {
+      fprintf(f_out, "vn %lf %lf %lf\n", verts_norm(r, 0), verts_norm(r, 1), verts_norm(r, 2));
+    }
+
+    const int CR = cells.rows();
+    for (int r = 0; r < CR; ++r)
+    {
+      fprintf(f_out, "f %d//%d %d//%d %d//%d\n", cells(r, 0)+1, cells(r, 0)+1, cells(r, 1)+1, cells(r, 1)+1, cells(r, 2)+1, cells(r, 2)+1);
+    }
+
+    fclose(f_out);
+    return true;
+  }
+
+  //! \brief write obj to path
+  //! \param [in] path
+  //! \return is_write_success
+  template<typename T, typename U=int>
+  bool WriteObjWithNorm(const Eigen::Matrix<T, -1, -1> &verts, const Eigen::Matrix<T, -1, -1> &verts_norm,
+                        const Eigen::Matrix<U, -1, -1> &cells, const Eigen::Matrix<U, -1, -1> &cells_norm,
+                        const char* path = "demo.obj")
+  {
+    FILE *f_out = fopen(path, "w");
+    if (!f_out)
+    {
+      printf("[  \033[1;31merror\033[0m  ] error in file open\n");
+      return false;
+    }
+
+    fputs("# write model by program\n", f_out);
+    const int VR = verts.rows();
+    const int VNR = verts_norm.rows();
+    for (int r = 0; r < VR; ++r)
+    {
+      fprintf(f_out, "v %lf %lf %lf\n", verts(r, 0), verts(r, 1), verts(r, 2));
+    }
+    for (int r = 0; r < VNR; ++r)
+    {
+      fprintf(f_out, "vn %lf %lf %lf\n", verts_norm(r, 0), verts_norm(r, 1), verts_norm(r, 2));
+    }
+
+    const int CR = cells.rows();
+    for (int r = 0; r < CR; ++r)
+    {
+      fprintf(f_out, "f %d//%d %d//%d %d//%d\n", cells(r, 0)+1, cells_norm(r, 0)+1,
+                                                 cells(r, 1)+1, cells_norm(r, 1)+1,
+                                                 cells(r, 2)+1, cells_norm(r, 2)+1);
+    }
+
+    fclose(f_out);
+    return true;
+  }
+
   template<typename T=double>
   bool AddCellAttributeToVTKModel(const char* path, const Eigen::Matrix<T, -1, 1> &attr, const char *attr_name = "attr");
   
@@ -200,7 +275,7 @@ namespace Jing
   template<typename T=double, typename U=int, typename W=double>
   bool WriteModel(const Eigen::Matrix<T, -1, -1> &verts,
                   const Eigen::Matrix<U, -1, -1> &cells, const char* path,
-                  const Eigen::Matrix<W, -1, 1> &attr = Eigen::Matrix<W, -1, 1>::Zero(0))
+                  const Eigen::Matrix<W, -1, 1> &attr)
   {
     return WriteTetHex<T, U, W>(verts, cells, path, attr);
   }

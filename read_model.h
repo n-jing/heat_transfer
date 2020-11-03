@@ -79,6 +79,107 @@ namespace Jing
     return {true, verts, cells};
   }
 
+  //! \brief read obj from path
+  //! \param [in] path
+  //! \return tuple, is_read_success, vertices, cells
+  template<typename T=double, typename U=int>
+  std::tuple<bool, Eigen::Matrix<T, -1, -1>, Eigen::Matrix<T, -1, -1>,
+             Eigen::Matrix<U, -1, -1>, Eigen::Matrix<U, -1, -1>> ReadObjWithNorm(const char* path)
+  {
+    FILE *f_in = fopen(path, "r");
+    if (!f_in || std::string(path).find(".obj") == std::string::npos)
+    {
+      printf("[  \033[1;31merror\033[0m  ] error in file open\n");
+      return {false, Eigen::Matrix<T, -1, -1>(0, 0), Eigen::Matrix<T, -1, -1>(0, 0), Eigen::Matrix<U, -1, -1>(0, 0), Eigen::Matrix<U, -1, -1>(0, 0)};
+    }
+    std::vector<std::array<T, 3>> points;
+    std::vector<std::array<U, 3>> faces;
+    std::vector<std::array<T, 3>> points_norm;
+    std::vector<std::array<U, 3>> faces_norm;
+  
+    char line[512];
+    while (!feof(f_in))
+    {
+      int scan_success = fscanf(f_in, "%[^\n]%*[\n]", line);
+      if (!scan_success)
+      {
+        printf("[  \033[1;31merror\033[0m  ] error in scan file line\n");
+      return {false, Eigen::Matrix<T, -1, -1>(0, 0), Eigen::Matrix<T, -1, -1>(0, 0), Eigen::Matrix<U, -1, -1>(0, 0), Eigen::Matrix<U, -1, -1>(0, 0)};
+      }
+      if (line[0] == 'v' && line[1] == ' ')
+      {
+        std::array<T, 3> v = {0, 0, 0};
+        if (std::is_same<T, double>::value)
+          sscanf(line, "%*c%lf%lf%lf", &v[0], &v[1], &v[2]);
+        else
+          sscanf(line, "%*c%f%f%f", &v[0], &v[1], &v[2]);
+          
+        points.push_back(move(v));
+      }
+      else if (line[0] == 'v' && line[1] == 'n')
+      {
+        std::array<T, 3> v = {0, 0, 0};
+        if (std::is_same<T, double>::value)
+          sscanf(line, "%*c%*c%lf%lf%lf", &v[0], &v[1], &v[2]);
+        else
+          sscanf(line, "%*c%*c%f%f%f", &v[0], &v[1], &v[2]);
+
+        points_norm.push_back(move(v));
+      }
+      else if (line[0] == 'f' && line[1] == ' ')
+      {
+        std::array<U, 3> f = {0, 0, 0};
+        std::array<U, 3> fn = {0, 0, 0};
+        if (std::string(line).find("/") != std::string::npos)
+        {
+          if (std::is_same<U, size_t>::value)
+          {
+            if (line[std::string(line).find("/")+1] == '/')
+              sscanf(line, "%*c%zu//%zu %zu//%zu %zu//%zu", &f[0], &fn[0], &f[1], &fn[1], &f[2], &fn[2]);
+            else
+              sscanf(line, "%*c%zu/%*d/%zu %zu/%*d/%zu %zu/%*d/%zu", &f[0], &fn[0], &f[1], &fn[1], &f[2], &fn[2]);
+          }
+          else
+          {
+            if (line[std::string(line).find("/")+1] == '/')
+              sscanf(line, "%*c%d//%d %d//%d %d//%d", &f[0], &fn[0], &f[1], &fn[1], &f[2], &fn[2]);
+            else
+              sscanf(line, "%*c%d/%*d/%d %d/%*d/%d %d/%*d/%d", &f[0], &fn[0], &f[1], &fn[1], &f[2], &fn[2]);
+          }      
+        }
+        else
+        {
+          EXITIF(true, "model without normal which is required!");
+        }
+
+        faces.emplace_back(std::array<U, 3>{f[0]-1, f[1]-1, f[2]-1});
+        faces_norm.emplace_back(std::array<U, 3>{fn[0]-1, fn[1]-1, fn[2]-1});
+      }
+    }
+
+    fclose(f_in);
+    const int vert_num = points.size();
+    const int vert_norm_num = points_norm.size();
+    const int face_num = faces.size();
+    Eigen::Matrix<T, -1, -1> verts(vert_num, 3);
+    Eigen::Matrix<U, -1, -1> cells(face_num, 3);
+
+    Eigen::Matrix<T, -1, -1> verts_norm(vert_num, 3);
+    Eigen::Matrix<U, -1, -1> cells_norm(face_num, 3);
+    for (int v = 0; v < vert_num; ++v)
+      THREE_ELEMENT_COPY(verts LBRACKETS v COMMA, RBRACKETS, points[v][, ]);
+
+    for (int v = 0; v < vert_norm_num; ++v)
+      THREE_ELEMENT_COPY(verts_norm LBRACKETS v COMMA, RBRACKETS, points_norm[v][, ]);
+
+    for (int f = 0; f < face_num; ++f)
+      THREE_ELEMENT_COPY(cells LBRACKETS f COMMA, RBRACKETS, faces[f][, ]);
+
+    for (int f = 0; f < face_num; ++f)
+      THREE_ELEMENT_COPY(cells_norm LBRACKETS f COMMA, RBRACKETS, faces_norm[f][, ]);
+
+    return {true, verts, verts_norm, cells, cells_norm};
+  }
 
   //! \brief read vtk from path
   //! \param [in] path
