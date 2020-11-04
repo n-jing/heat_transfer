@@ -12,11 +12,6 @@
 
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
-
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
@@ -33,8 +28,7 @@ int main()
 
   // build and compile our shader zprogram
   // ------------------------------------
-  Shader lightingShader("2.2.basic_lighting.vs", "2.2.basic_lighting.fs");
-  Shader lightCubeShader("2.2.light_cube.vs", "2.2.light_cube.fs");
+  Shader lightingShader("../shader/demo.vs", "../shader/demo.fs");
 
   // set up vertex data (and buffer(s)) and configure vertex attributes
   // ------------------------------------------------------------------
@@ -149,19 +143,6 @@ int main()
 
     // render the cube
     glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-    // also draw the lamp object
-    lightCubeShader.use();
-    lightCubeShader.setMat4("projection", projection);
-    lightCubeShader.setMat4("view", view);
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, lightPos);
-    model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-    lightCubeShader.setMat4("model", model);
-
-    glBindVertexArray(lightCubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
