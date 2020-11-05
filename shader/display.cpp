@@ -8,13 +8,15 @@
 #include "shader.h"
 #include "camera.h"
 #include "init_window.h"
-
+#include "mesh.h"
 
 
 #include "read_model.h"
 #include <vector>
 #include <iostream>
 #include <Eigen/Core>
+#include<Eigen/SparseLU>
+
 
 using namespace Eigen;
 using namespace std;
@@ -40,7 +42,7 @@ int main(int argc, char *argv[])
   // ------------------------------------
   Shader lightingShader; //("../shader/demo.vs", "../shader/demo.fs");
   const char *vs_path[] = {"../shader/demo.vs"};
-  const char *fs_path[] = {"../shader/version.shader", "../shader/MATLAB_parula.frag", "../shader/demo.fs"};
+  const char *fs_path[] = {"../shader/version.frag", "../shader/MATLAB_parula.frag", "../shader/demo.fs"};
   
   lightingShader.CompileVertexShader(1, vs_path);
   lightingShader.CompileFragmentShader(3, fs_path);
@@ -59,70 +61,37 @@ int main(int argc, char *argv[])
     return -1;
   }
   const int verts_num = verts.rows();
+
   
-// set up vertex data (and buffer(s)) and configure vertex attributes
-  // ------------------------------------------------------------------
-  float vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+  Eigen::Matrix<FLOAT, -1, 1> temperature;
+  std::set<int> source;
+  tie(temperature, source) = GenerateTemperature<FLOAT>(verts_num, 2);
+  Matrix<FLOAT, -1, -1, RowMajor> verts_data = UpdateVertsData<FLOAT, int>(verts, verts_norm, temperature, cells, cells_norm);
+  Matrix<int, -1, -1, RowMajor> verts_cell = cells;
 
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
 
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-    0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-    0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-    0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-    0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-    0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-    0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-    0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-  };
-
-  Matrix<FLOAT, -1, -1> verts_data(verts_num, 7);
 // first, configure the cube's VAO (and VBO)
-  unsigned int VBO, cubeVAO;
-  glGenVertexArrays(1, &cubeVAO);
+  unsigned int VBO, VAO, EBO;
+  glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
 
+  glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, verts_data.size() * sizeof(FLOAT), verts_data.data(), GL_DYNAMIC_DRAW);
 
-  glBindVertexArray(cubeVAO);
-
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, verts_cell.size() * sizeof(int), verts_cell.data(), GL_STATIC_DRAW);
+  
   // position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
   // normal attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+  // normal attribute
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
 
 
   // render loop
@@ -138,8 +107,75 @@ int main(int argc, char *argv[])
 
     // input
     // -----
-    processInput(window, deltaTime);
+    CameraMovement k = processInput(window, deltaTime);
+    if (k == CameraMovement::SPACE)
+    {
+      vector<int> vert_lap_id(verts_num, 0);
+      int vert_count = 0;
+      for (int i = 0; i < verts_num; ++i)
+      {
+        if (source.count(i))
+          continue;
+        vert_lap_id[i] = vert_count;
+        vert_count++;
+      }
 
+      Matrix<FLOAT, -1, 1> b = Matrix<FLOAT, -1, 1>::Zero(vert_count);
+      SparseMatrix<FLOAT> laplace(vert_count, vert_count);
+      {
+        vector<set<int>> verts_neighbor(verts.rows());
+        const int R = cells.rows();
+        const int C = cells.cols();
+        for (int r = 0; r < R; ++r)
+        {
+          for (int c = 0; c < C; ++c)
+          {
+            for (int k = 0; k < C; ++k)
+            {
+              if (k == c)
+                continue;
+              verts_neighbor[cells(r, c)].insert(cells(r, k));
+            }
+          }
+        }
+
+        vector<Triplet<FLOAT>> laplace_element;
+        for (int v = 0; v < verts.rows(); ++v)
+        {
+          if (source.count(v))
+            continue;
+          laplace_element.emplace_back(vert_lap_id[v], vert_lap_id[v], -1.0);
+          for (auto n : verts_neighbor[v])
+          {
+            if (source.count(n))
+            {
+              b(vert_lap_id[v]) -= temperature(n) / verts_neighbor[v].size();
+            }
+            else
+            {
+              laplace_element.emplace_back(vert_lap_id[v], vert_lap_id[n], 1.0 / verts_neighbor[v].size());
+            }
+          }
+        }
+        laplace.setFromTriplets(laplace_element.begin(), laplace_element.end());
+      }
+
+      SparseLU<SparseMatrix<FLOAT>> solver;
+      solver.compute(laplace);
+      Matrix<FLOAT, -1, 1> t = solver.solve(b);
+      
+      Matrix<FLOAT, -1, 1> balance = Matrix<FLOAT, -1, 1>::Zero(verts_num);
+      for (int i = 0; i < verts_num; ++i)
+      {
+        if (source.count(i))
+          balance(i) = temperature(i);
+        else
+          balance(i) = t[vert_lap_id[i]];
+      }
+
+      verts_data.col(6) = ((balance.array() - balance.minCoeff())/(balance.maxCoeff() - balance.minCoeff())).matrix();
+    }
+    
     // render
     // ------
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -147,7 +183,6 @@ int main(int argc, char *argv[])
 
     // be sure to activate shader when setting uniforms/drawing objects
     lightingShader.use();
-    lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
     lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
     lightingShader.setVec3("lightPos", lightPos);
     lightingShader.setVec3("viewPos", camera.Position);
@@ -160,23 +195,27 @@ int main(int argc, char *argv[])
 
     // world transformation
     glm::mat4 model = glm::mat4(1.0f);
+    float angle = 10*glfwGetTime();
+    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 1.0f, 0.0f));
     lightingShader.setMat4("model", model);
 
     // render the cube
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
+    glBufferData(GL_ARRAY_BUFFER, verts_data.size() * sizeof(FLOAT), verts_data.data(), GL_DYNAMIC_DRAW);
+    glBindVertexArray(VAO);
+    // glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawElements(GL_TRIANGLES, verts_cell.size(), GL_UNSIGNED_INT, 0);
+    
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
-
+  
   // optional: de-allocate all resources once they've outlived their purpose:
   // ------------------------------------------------------------------------
-  glDeleteVertexArrays(1, &cubeVAO);
+  glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &EBO);
 
   // glfw: terminate, clearing all previously allocated GLFW resources.
   // ------------------------------------------------------------------

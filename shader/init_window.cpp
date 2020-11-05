@@ -55,34 +55,39 @@ GLFWwindow* InitWindow(unsigned int SCR_WIDTH, unsigned int SCR_HEIGHT, const ch
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window, float deltaTime)
+CameraMovement processInput(GLFWwindow *window, float deltaTime)
 {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
 
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    return CameraMovement::SPACE;
+
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    camera.ProcessKeyboard(FORWARD, deltaTime);
+    camera.ProcessKeyboard(CameraMovement::FORWARD, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    camera.ProcessKeyboard(BACKWARD, deltaTime);
+    camera.ProcessKeyboard(CameraMovement::BACKWARD, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    camera.ProcessKeyboard(LEFT, deltaTime);
+    camera.ProcessKeyboard(CameraMovement::LEFT, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    camera.ProcessKeyboard(RIGHT, deltaTime);
+    camera.ProcessKeyboard(CameraMovement::RIGHT, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-    camera.ProcessKeyboard(UP, deltaTime);
+    camera.ProcessKeyboard(CameraMovement::UP, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-    camera.ProcessKeyboard(DOWN, deltaTime);
+    camera.ProcessKeyboard(CameraMovement::DOWN, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-    camera.ProcessKeyboard(NEAR);
+    camera.ProcessKeyboard(CameraMovement::NEAR);
   if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-    camera.ProcessKeyboard(FAR);
+    camera.ProcessKeyboard(CameraMovement::FAR);
 
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-    camera.ProcessKeyboard(ROTATEFRONT);
+    camera.ProcessKeyboard(CameraMovement::ROTATEFRONT);
   if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-    camera.ProcessKeyboard(ROTATERIGHT);
+    camera.ProcessKeyboard(CameraMovement::ROTATERIGHT);
   if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-    camera.ProcessKeyboard(ROTATEUP);
+    camera.ProcessKeyboard(CameraMovement::ROTATEUP);
+
+  return CameraMovement::NL;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

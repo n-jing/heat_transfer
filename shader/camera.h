@@ -10,7 +10,9 @@
 
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
-enum Camera_Movement {
+enum class CameraMovement {
+  NL,
+  SPACE,
   FORWARD,
   BACKWARD,
   LEFT,
@@ -84,40 +86,40 @@ public:
     }
 
   // processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
-  void ProcessKeyboard(Camera_Movement direction, float deltaTime)
+  void ProcessKeyboard(CameraMovement direction, float deltaTime)
     {
       float velocity = MovementSpeed * deltaTime;
-      if (direction == FORWARD)
+      if (direction == CameraMovement::FORWARD)
         Position += Front * velocity;
-      if (direction == BACKWARD)
+      if (direction == CameraMovement::BACKWARD)
         Position -= Front * velocity;
-      if (direction == LEFT)
+      if (direction == CameraMovement::LEFT)
         Position -= Right * velocity;
-      if (direction == RIGHT)
+      if (direction == CameraMovement::RIGHT)
         Position += Right * velocity;
-      if (direction == UP)
+      if (direction == CameraMovement::UP)
         Position += Up * velocity;
-      if (direction == DOWN)
+      if (direction == CameraMovement::DOWN)
         Position -= Up * velocity;
     }
 
-  void ProcessKeyboard(Camera_Movement direction)
+  void ProcessKeyboard(CameraMovement direction)
     {
-      if (direction ==  NEAR)
+      if (direction ==  CameraMovement::NEAR)
         Zoom -= ZoomDis;
-      if (direction == FAR)
+      if (direction == CameraMovement::FAR)
         Zoom += ZoomDis;
-      if (direction == ROTATEFRONT)
+      if (direction == CameraMovement::ROTATEFRONT)
       {
         RotateVec3(Up, glm::radians(rotateangle), Front);
         RotateVec3(Right, glm::radians(rotateangle), Front);
       }
-      if (direction == ROTATERIGHT)
+      if (direction == CameraMovement::ROTATERIGHT)
       {
         RotateVec3(Up, glm::radians(rotateangle), Right);
         RotateVec3(Front, glm::radians(rotateangle), Right);
       }
-      if (direction == ROTATEUP)
+      if (direction == CameraMovement::ROTATEUP)
       {
         RotateVec3(Front, glm::radians(rotateangle), Up);
         RotateVec3(Right, glm::radians(rotateangle), Up);

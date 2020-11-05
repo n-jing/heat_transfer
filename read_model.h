@@ -164,7 +164,7 @@ namespace Jing
     Eigen::Matrix<T, -1, -1> verts(vert_num, 3);
     Eigen::Matrix<U, -1, -1> cells(face_num, 3);
 
-    Eigen::Matrix<T, -1, -1> verts_norm(vert_num, 3);
+    Eigen::Matrix<T, -1, -1> verts_norm(vert_norm_num, 3);
     Eigen::Matrix<U, -1, -1> cells_norm(face_num, 3);
     for (int v = 0; v < vert_num; ++v)
       THREE_ELEMENT_COPY(verts LBRACKETS v COMMA, RBRACKETS, points[v][, ]);
