@@ -25,10 +25,10 @@ using namespace Jing;
 using FLOAT = float;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 70.0f));
 
 // lighting
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightPos(70.2f, 71.0f, 72.0f);
 
 int main(int argc, char *argv[])
 {
@@ -37,12 +37,15 @@ int main(int argc, char *argv[])
   const unsigned int SCR_HEIGHT = 600;
 
   GLFWwindow* window = InitWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL");
-
+  glEnable(GL_PROGRAM_POINT_SIZE);
+  
   // build and compile our shader zprogram
   // ------------------------------------
   Shader lightingShader; //("../shader/demo.vs", "../shader/demo.fs");
   const char *vs_path[] = {"../shader/demo.vs"};
-  const char *fs_path[] = {"../shader/version.frag", "../shader/MATLAB_parula.frag", "../shader/demo.fs"};
+  const char *fs_path[] = {"../shader/version.frag", "../shader/transform_rainbow.frag", "../shader/demo.fs"};
+
+  Shader pointShader("../shader/point.vs", "../shader/point.fs");
   
   lightingShader.CompileVertexShader(1, vs_path);
   lightingShader.CompileFragmentShader(3, fs_path);
@@ -65,14 +68,20 @@ int main(int argc, char *argv[])
   
   Eigen::Matrix<FLOAT, -1, 1> temperature;
   std::set<int> source;
-  tie(temperature, source) = GenerateTemperature<FLOAT>(verts_num, 2);
+  tie(temperature, source) = GenerateTemperature<FLOAT>(verts_num, 3);
   Matrix<FLOAT, -1, -1, RowMajor> verts_data = UpdateVertsData<FLOAT, int>(verts, verts_norm, temperature, cells, cells_norm);
   Matrix<int, -1, -1, RowMajor> verts_cell = cells;
-
+  Matrix<FLOAT, -1, -1, RowMajor> verts_points(source.size(), 3);
+  int s_count = 0;
+  for (auto s : source)
+  {
+    verts_points.row(s_count++) = verts.row(s);
+  }
 
 // first, configure the cube's VAO (and VBO)
-  unsigned int VBO, VAO, EBO;
+  unsigned int VBO, VAO, VAO_P, EBO;
   glGenVertexArrays(1, &VAO);
+  glGenVertexArrays(1, &VAO_P);
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
 
@@ -84,25 +93,32 @@ int main(int argc, char *argv[])
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, verts_cell.size() * sizeof(int), verts_cell.data(), GL_STATIC_DRAW);
   
   // position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(FLOAT), (void*)0);
   glEnableVertexAttribArray(0);
   // normal attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(FLOAT), (void*)(3 * sizeof(FLOAT)));
   glEnableVertexAttribArray(1);
   // normal attribute
-  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(6 * sizeof(float)));
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(FLOAT), (void*)(6 * sizeof(FLOAT)));
   glEnableVertexAttribArray(2);
 
 
+  glBindVertexArray(VAO_P);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, verts_points.size() * sizeof(FLOAT), verts_points.data(), GL_DYNAMIC_DRAW);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(FLOAT), (void*)0);
+  glEnableVertexAttribArray(0);
+
   // render loop
   // -----------
-  float lastFrame = 0.0f;
+  FLOAT lastFrame = 0.0f;
   while (!glfwWindowShouldClose(window))
   {
     // per-frame time logic
     // --------------------
-    float currentFrame = glfwGetTime();
-    float deltaTime = currentFrame - lastFrame;
+    FLOAT currentFrame = glfwGetTime();
+    FLOAT deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
     // input
@@ -202,8 +218,18 @@ int main(int argc, char *argv[])
     // render the cube
     glBufferData(GL_ARRAY_BUFFER, verts_data.size() * sizeof(FLOAT), verts_data.data(), GL_DYNAMIC_DRAW);
     glBindVertexArray(VAO);
-    // glDrawArrays(GL_TRIANGLES, 0, 36);
     glDrawElements(GL_TRIANGLES, verts_cell.size(), GL_UNSIGNED_INT, 0);
+
+    pointShader.use();
+    pointShader.setMat4("projection", projection);
+    pointShader.setMat4("view", view);
+    pointShader.setMat4("model", model);
+
+    
+    glBufferData(GL_ARRAY_BUFFER, verts_points.size() * sizeof(FLOAT), verts_points.data(), GL_DYNAMIC_DRAW);
+    glBindVertexArray(VAO_P);
+    // glVertexPointer(2, GL_FLOAT, 0, VAO_P);
+    glDrawArrays(GL_POINTS, 0, verts_data.rows());
     
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
     // -------------------------------------------------------------------------------
@@ -214,6 +240,7 @@ int main(int argc, char *argv[])
   // optional: de-allocate all resources once they've outlived their purpose:
   // ------------------------------------------------------------------------
   glDeleteVertexArrays(1, &VAO);
+  glDeleteVertexArrays(1, &VAO_P);
   glDeleteBuffers(1, &VBO);
   glDeleteBuffers(1, &EBO);
 
