@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <vector>
 
 class Shader
 {
@@ -37,7 +38,7 @@ public:
         try 
         {
           // open files
-          vShaderFile.open(vertexPath);
+          vShaderFile.open(path[i]);
           std::stringstream vShaderStream;
           // read file's buffer contents into streams
           vShaderStream << vShaderFile.rdbuf();
@@ -66,7 +67,7 @@ public:
     {
       // 1. retrieve the vertex/fragment source code from filePath
       std::vector<std::string> fragmentCode(num);
-      const char *shader(num);
+      const char *shader[num];
       for (int i = 0; i < num; ++i)
       {
         std::ifstream fShaderFile;
@@ -75,7 +76,7 @@ public:
         try 
         {
           // open files
-          fShaderFile.open(fragmentPath);
+          fShaderFile.open(path[i]);
           std::stringstream fShaderStream;
           // read file's buffer contents into streams
           fShaderStream << fShaderFile.rdbuf();		
@@ -105,7 +106,7 @@ public:
       glAttachShader(ID, fragment);
       glLinkProgram(ID);
       checkCompileErrors(ID, "PROGRAM");
-      return Id;
+      return ID;
     }
 
   ~Shader()

@@ -16,12 +16,16 @@ using namespace Eigen;
 
 typedef double FLOAT;
 
+
+
 int main (int argc, char *argv[])
 {
   bool read_success = false;
   Eigen::Matrix<FLOAT, -1, -1> verts;
   Eigen::Matrix<int, -1, -1> cells;
-  tie(read_success, verts, cells) = ReadModel<FLOAT, int>(argv[1]);
+  Eigen::Matrix<FLOAT, -1, -1> verts_norm;
+  Eigen::Matrix<int, -1, -1> cells_norm;
+  tie(read_success, verts, verts_norm, cells, cells_norm) = ReadObjWithNorm<FLOAT, int>(argv[1]);
   if (!read_success)
   {
     cerr << "[  \033[1;31merror\033[0m  ] " << "error in read model!" << endl;
@@ -37,7 +41,6 @@ int main (int argc, char *argv[])
   // asset(vert_num > 10);
   set<int> source;
   const int source_num = 10;
-
   Matrix<FLOAT, -1, 1> temperature = Matrix<FLOAT, -1, 1>::Zero(vert_num);
   for (int i = 0; i < source_num; ++i)
   {

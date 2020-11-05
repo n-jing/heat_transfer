@@ -12,7 +12,7 @@ find_package(assimp REQUIRED)
 
 FILE(GLOB source *.cpp)
 ADD_EXECUTABLE(display ${source})
-TARGET_INCLUDE_DIRECTORIES(display PUBLIC ${CMAKE_SOURCE_DIR}/extern/glad/include)
+TARGET_INCLUDE_DIRECTORIES(display PUBLIC ${CMAKE_SOURCE_DIR}/extern/glad/include ${CMAKE_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(display glad dl GL GLU glut glfw ${ASSIMP_LIBRARIES})
 SET_TARGET_PROPERTIES(display
   PROPERTIES
