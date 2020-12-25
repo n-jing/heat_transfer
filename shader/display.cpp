@@ -16,7 +16,9 @@
 #include <iostream>
 #include <Eigen/Core>
 #include<Eigen/SparseLU>
-
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 using namespace Eigen;
 using namespace std;
@@ -25,10 +27,14 @@ using namespace Jing;
 using FLOAT = float;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 70.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 10.0f));
 
 // lighting
 glm::vec3 lightPos(70.2f, 71.0f, 72.0f);
+
+constexpr int MAX_FRAME = 400;
+GLbyte *frame[MAX_FRAME];
+int frame_count = 0;
 
 int main(int argc, char *argv[])
 {
@@ -36,14 +42,14 @@ int main(int argc, char *argv[])
   const unsigned int SCR_WIDTH = 800;
   const unsigned int SCR_HEIGHT = 600;
 
-  GLFWwindow* window = InitWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL");
+  GLFWwindow* window = InitWindow(SCR_WIDTH, SCR_HEIGHT, "Heat Transfer");
   glEnable(GL_PROGRAM_POINT_SIZE);
   
   // build and compile our shader zprogram
   // ------------------------------------
   Shader lightingShader; //("../shader/demo.vs", "../shader/demo.fs");
   const char *vs_path[] = {"../shader/demo.vs"};
-  const char *fs_path[] = {"../shader/version.frag", "../shader/transform_rainbow.frag", "../shader/demo.fs"};
+  const char *fs_path[] = {"../shader/version.frag", "../shader/gnuplot.frag", "../shader/demo.fs"};
 
   Shader pointShader("../shader/point.vs", "../shader/point.fs");
   
@@ -65,10 +71,11 @@ int main(int argc, char *argv[])
   }
   const int verts_num = verts.rows();
 
-  
+
+  int source_num = atoi(argv[2]);
   Eigen::Matrix<FLOAT, -1, 1> temperature;
   std::set<int> source;
-  tie(temperature, source) = GenerateTemperature<FLOAT>(verts_num, 3);
+  tie(temperature, source) = GenerateTemperature<FLOAT>(verts_num, source_num);
   Matrix<FLOAT, -1, -1, RowMajor> verts_data = UpdateVertsData<FLOAT, int>(verts, verts_norm, temperature, cells, cells_norm);
   Matrix<int, -1, -1, RowMajor> verts_cell = cells;
   Matrix<FLOAT, -1, -1, RowMajor> verts_points(source.size(), 3);
@@ -110,6 +117,7 @@ int main(int argc, char *argv[])
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(FLOAT), (void*)0);
   glEnableVertexAttribArray(0);
 
+  
   // render loop
   // -----------
   FLOAT lastFrame = 0.0f;
@@ -124,7 +132,8 @@ int main(int argc, char *argv[])
     // input
     // -----
     CameraMovement k = processInput(window, deltaTime);
-    if (k == CameraMovement::SPACE)
+    // if (k == CameraMovement::SPACE)
+    if (frame_count == 200)
     {
       vector<int> vert_lap_id(verts_num, 0);
       int vert_count = 0;
@@ -235,8 +244,26 @@ int main(int argc, char *argv[])
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
     glfwPollEvents();
+
+    double fps = 30.0;
+    double time_current = glfwGetTime();
+    double time_accurate = frame_count / 1.0 / fps;
+    double time_delta = time_accurate - time_current;
+    time_delta = time_delta > 0 ? time_delta : 0;
+    if(true)
+      printf("frame_count:%d time_accurate:%lf time_current:%lf time_delta:%lf\n", frame_count, time_accurate, time_current, time_delta);
+    frame[frame_count] = new GLbyte[SCR_WIDTH * SCR_HEIGHT * 3];
+    glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, frame[frame_count++]);
+    usleep(time_delta * 1000000);
+    if (frame_count >= MAX_FRAME)
+      break;
   }
-  
+
+  cerr << "MMMMMMMMMMMMMMMM" << endl;
+  FILE *out = fopen("raw_video", "wb");
+  for(int i = 0; i < frame_count; i++)
+    fwrite(frame[i], SCR_WIDTH * SCR_HEIGHT * 3, 1, out);
+  cerr << "NNNNNNNNNNNNNNNNNN" << endl;
   // optional: de-allocate all resources once they've outlived their purpose:
   // ------------------------------------------------------------------------
   glDeleteVertexArrays(1, &VAO);

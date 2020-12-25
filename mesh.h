@@ -37,11 +37,20 @@ std::tuple<Eigen::Matrix<T, -1, 1>, std::set<int>> GenerateTemperature(int verts
   // asset(vert_num > 10);
   std::set<int> source;
   Eigen::Matrix<T, -1, 1> temperature = Eigen::Matrix<T, -1, 1>::Zero(verts_num);
+
   for (int i = 0; i < source_num; ++i)
   {
     int s = source_ger(e);
     source.insert(s);
     temperature(s) = source_temperature_ger(e);
+  }
+
+  std::uniform_real_distribution<T> temperature_ger(1, 50);
+  for (int v = 0; v < verts_num; ++v)
+  {
+    if (source.count(v))
+      continue;
+    temperature(v) = temperature_ger(e);
   }
 
   return {temperature, source};

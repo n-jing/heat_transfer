@@ -10,7 +10,7 @@ uniform vec3 lightColor;
 
 void main()
 {
-  vec4 objectColor = colormap(T);
+  vec4 objectColor = colormap(T, 33, 13, 10);
   // ambient
   float ambientStrength = 0.25;
   vec3 ambient = ambientStrength * lightColor;
@@ -30,5 +30,7 @@ void main()
         
   vec3 result = (ambient + diffuse + specular) * objectColor.xyz;
   FragColor = vec4(result, objectColor.a);
+  /* if (T > 0.5) */
+    /* FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f); */
   /* FragColor = objectColor; */
 } 
