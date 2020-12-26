@@ -9,7 +9,7 @@
 #include "camera.h"
 #include "init_window.h"
 #include "mesh.h"
-
+#include "init_buffer.h"
 
 #include "read_model.h"
 #include <vector>
@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
   const char *fs_path[] = {"../shader/version.frag", "../shader/gnuplot.frag", "../shader/demo.fs"};
 
   Shader pointShader("../shader/point.vs", "../shader/point.fs");
+  Shader planeShader("../shader/plane.vs", "../shader/plane.fs");
   
   lightingShader.CompileVertexShader(1, vs_path);
   lightingShader.CompileFragmentShader(3, fs_path);
@@ -86,11 +87,12 @@ int main(int argc, char *argv[])
   }
 
 // first, configure the cube's VAO (and VBO)
-  unsigned int VBO, VAO, VAO_P, EBO;
+  unsigned int VBO, VAO, VAO_P, VBO_P, EBO;
   glGenVertexArrays(1, &VAO);
   glGenVertexArrays(1, &VAO_P);
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
+  glGenBuffers(1, &VBO_P);
 
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -108,16 +110,53 @@ int main(int argc, char *argv[])
   // normal attribute
   glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(FLOAT), (void*)(6 * sizeof(FLOAT)));
   glEnableVertexAttribArray(2);
+  glBindVertexArray(0);
 
 
   glBindVertexArray(VAO_P);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO_P);
   glBufferData(GL_ARRAY_BUFFER, verts_points.size() * sizeof(FLOAT), verts_points.data(), GL_DYNAMIC_DRAW);
   // position attribute
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(FLOAT), (void*)0);
   glEnableVertexAttribArray(0);
-
+  // glBindBuffer(GL_ARRAY_BUFFER, 0);
+  // glBindVertexArray(0);
   
+  float level = -2.0;
+  float plane_vertices[] = {
+    // positions          // colors           // texture coords
+    100.5f,  level, 100.0f,   0.0f, 1.0f, 0.0f,   100.0f, 100.0f, // top right
+    100.5f, level, -100.0f,   0.0f, 1.0f, 0.0f,   100.0f, -100.0f, // bottom right
+    -100.5f, level, -100.0f,   0.0f, 1.0f, 0.0f,   -100.0f, -100.0f, // bottom left
+    -100.5f,  level, 100.0f,   0.0f, 1.0f, 0.0f,   -100.0f, 100.0f  // top left 
+  };
+  unsigned int plane_indices[] = {  
+    0, 1, 3, // first triangle
+    1, 2, 3  // second triangle
+  };
+
+  unsigned int planeVBO, planeVAO, planeEBO;
+  glGenVertexArrays(1, &planeVAO);
+  glGenBuffers(1, &planeVBO);
+  glGenBuffers(1, &planeEBO);
+
+  glBindVertexArray(planeVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(plane_vertices), plane_vertices, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planeEBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(plane_indices), plane_indices, GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0));
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
+  glEnableVertexAttribArray(2);
+
+  unsigned int texture = loadTexture("../grid.png");
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+
   // render loop
   // -----------
   FLOAT lastFrame = 0.0f;
@@ -203,7 +242,7 @@ int main(int argc, char *argv[])
     
     // render
     // ------
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // be sure to activate shader when setting uniforms/drawing objects
@@ -225,21 +264,34 @@ int main(int argc, char *argv[])
     lightingShader.setMat4("model", model);
 
     // render the cube
-    glBufferData(GL_ARRAY_BUFFER, verts_data.size() * sizeof(FLOAT), verts_data.data(), GL_DYNAMIC_DRAW);
     glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, verts_data.size() * sizeof(FLOAT), verts_data.data(), GL_DYNAMIC_DRAW);
     glDrawElements(GL_TRIANGLES, verts_cell.size(), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
 
     pointShader.use();
     pointShader.setMat4("projection", projection);
     pointShader.setMat4("view", view);
     pointShader.setMat4("model", model);
-
-    
-    glBufferData(GL_ARRAY_BUFFER, verts_points.size() * sizeof(FLOAT), verts_points.data(), GL_DYNAMIC_DRAW);
     glBindVertexArray(VAO_P);
+    glBufferData(GL_ARRAY_BUFFER, verts_points.size() * sizeof(FLOAT), verts_points.data(), GL_DYNAMIC_DRAW);
     // glVertexPointer(2, GL_FLOAT, 0, VAO_P);
     glDrawArrays(GL_POINTS, 0, verts_data.rows());
+    glBindVertexArray(0);
     
+    
+    //draw plane
+    planeShader.use();
+    planeShader.setMat4("projection", projection);
+    planeShader.setMat4("view", view);
+    planeShader.setMat4("model", glm::mat4(1.0f));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    glBindVertexArray(planeVAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
@@ -259,17 +311,21 @@ int main(int argc, char *argv[])
       break;
   }
 
-  cerr << "MMMMMMMMMMMMMMMM" << endl;
   FILE *out = fopen("raw_video", "wb");
   for(int i = 0; i < frame_count; i++)
     fwrite(frame[i], SCR_WIDTH * SCR_HEIGHT * 3, 1, out);
-  cerr << "NNNNNNNNNNNNNNNNNN" << endl;
+
   // optional: de-allocate all resources once they've outlived their purpose:
   // ------------------------------------------------------------------------
   glDeleteVertexArrays(1, &VAO);
   glDeleteVertexArrays(1, &VAO_P);
   glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &VBO_P);
   glDeleteBuffers(1, &EBO);
+
+  glDeleteVertexArrays(1, &planeVAO);
+  glDeleteBuffers(1, &planeVBO);
+  glDeleteBuffers(1, &planeEBO);
 
   // glfw: terminate, clearing all previously allocated GLFW resources.
   // ------------------------------------------------------------------
