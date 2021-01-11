@@ -244,6 +244,7 @@ int main(int argc, char *argv[])
     // ------
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_MULTISAMPLE);
 
     // be sure to activate shader when setting uniforms/drawing objects
     lightingShader.use();
