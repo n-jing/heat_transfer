@@ -7,7 +7,7 @@
 #include <iostream>
 
 template<typename T=float, typename U=int>
-Eigen::Matrix<T, -1, -1, Eigen::RowMajor> UpdateVertsData(const Eigen::Matrix<T, -1, -1> &verts, const Eigen::Matrix<T, -1, -1> &verts_norm, const Eigen::Matrix<T, -1, 1> &t, const Eigen::Matrix<int, -1, -1> &cells, const Eigen::Matrix<int, -1, -1> &cells_norm)
+Eigen::Matrix<T, -1, -1, Eigen::RowMajor> UpdateVertsData(const Eigen::Matrix<T, -1, -1> &verts, const Eigen::Matrix<T, -1, -1> &verts_norm, const Eigen::Matrix<T, -1, 1> &t, const Eigen::Matrix<U, -1, -1> &cells, const Eigen::Matrix<U, -1, -1> &cells_norm)
 {
   const int verts_num = verts.rows();
   Eigen::Matrix<T, -1, -1, Eigen::RowMajor> verts_data = Eigen::Matrix<T, -1, -1, Eigen::RowMajor>::Zero(verts_num, 7);

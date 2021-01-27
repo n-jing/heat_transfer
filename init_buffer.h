@@ -42,10 +42,10 @@ namespace Jing
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vert_len, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vert_len, vertices, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ele_len, ele_idx, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ele_len, ele_idx, GL_DYNAMIC_DRAW);
 
     const int N = len.size();
     for (int i = 0; i < N; ++i)
