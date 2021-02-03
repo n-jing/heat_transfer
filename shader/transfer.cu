@@ -19,6 +19,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cuda_gl_interop.h>
+#include <cuda_runtime.h>
+
 
 using namespace Eigen;
 using namespace std;
@@ -91,7 +94,9 @@ int main(int argc, char *argv[])
   FLOAT *v_data = verts_data.data();
   InitBufferEBO<FLOAT>(VAO, VBO, EBO, verts_data.size() * sizeof(FLOAT), v_data, 7, verts_cell.size() * sizeof(int), verts_cell.data(), {3, 3, 1}, {0, 3, 6});
   InitBuffer(VAO_P, VBO_P, verts_points.size() * sizeof(FLOAT), verts_points.data(), 3, {3}, {0});
-  
+  cudaGraphicsResource *VBO_cuda;
+  cudaGraphicsGLRegisterBuffer(&VBO_cuda, VBO, cudaGraphicsRegisterFlagsNone);
+
   float level = -2.0;
   float plane_vertices[] = {
     // positions          // colors           // texture coords
@@ -193,6 +198,8 @@ int main(int argc, char *argv[])
       }
 
       verts_data.col(6) = ((balance.array() - balance.minCoeff())/(balance.maxCoeff() - balance.minCoeff())).matrix();
+      glBindBuffer(GL_ARRAY_BUFFER, VBO);
+      glBufferData(GL_ARRAY_BUFFER, verts_data.size()*sizeof(FLOAT), verts_data.data(), GL_DYNAMIC_DRAW);
     }
     
     // render
@@ -222,6 +229,12 @@ int main(int argc, char *argv[])
     // render the cube
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    cudaGraphicsMapResources(1, &VBO_cuda, 0);
+    FLOAT *dev_data;
+    size_t dev_data_size;
+    cudaGraphicsResourceGetMappedPointer((void**)&dev_data, &dev_data_size, VBO_cuda);
+    cudaGraphicsUnmapResources(1, &VBO_cuda, 0);
+    
     glDrawElements(GL_TRIANGLES, verts_cell.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 
@@ -268,6 +281,7 @@ int main(int argc, char *argv[])
   for(int i = 0; i < frame_count; i++)
     fwrite(frame[i], SCR_WIDTH * SCR_HEIGHT * 3, 1, out);
 
+  cudaGraphicsUnregisterResource(VBO_cuda);
   // optional: de-allocate all resources once they've outlived their purpose:
   // ------------------------------------------------------------------------
   glDeleteVertexArrays(1, &VAO);
